@@ -1,0 +1,136 @@
+@startuml
+!define ENTITY(name,desc) class name as "desc" << (E,#AAAAFF) >>
+
+ENTITY(User, "User") {
+  - id: Long <<PK>>
+  - email: String
+  - password: String
+  - firstName: String
+  - lastName: String
+  - role: String << "Admin" or "Customer" >>
+  - createdAt: LocalDateTime
+  - updatedAt: LocalDateTime
+}
+
+ENTITY(Admin, "Admin") {
+  - id: Long <<PK>>
+  - adminLevel: String
+  - permissions: String
+  - userId: Long <<FK>>
+}
+
+ENTITY(Customer, "Customer") {
+  - id: Long <<PK>>
+  - phone: String
+  - address: String
+  - loyaltyPoints: Integer
+  - userId: Long <<FK>>
+}
+
+ENTITY(Product, "Product") {
+  - id: Long <<PK>>
+  - name: String
+  - description: String
+  - price: BigDecimal
+  - stockQuantity: Integer
+  - category: String
+  - imageUrl: String
+  - isActive: Boolean
+  - createdAt: LocalDateTime
+  - adminId: Long <<FK>>
+}
+
+ENTITY(Discount, "Discount") {
+  - id: Long <<PK>>
+  - code: String
+  - percentage: BigDecimal
+  - startDate: LocalDateTime
+  - endDate: LocalDateTime
+  - maxUses: Integer
+  - usedCount: Integer
+  - isActive: Boolean
+  - createdAt: LocalDateTime
+  - adminId: Long <<FK>>
+}
+
+ENTITY(Review, "Review") {
+  - id: Long <<PK>>
+  - rating: Integer
+  - comment: String
+  - createdAt: LocalDateTime
+  - customerId: Long <<FK>>
+  - productId: Long <<FK>>
+}
+
+ENTITY(Cart, "Cart") {
+  - id: Long <<PK>>
+  - createdAt: LocalDateTime
+  - updatedAt: LocalDateTime
+  - customerId: Long <<FK>>
+}
+
+ENTITY(CartItem, "CartItem") {
+  - id: Long <<PK>>
+  - quantity: Integer
+  - cartId: Long <<FK>>
+  - productId: Long <<FK>>
+}
+
+ENTITY(Order, "Order") {
+  - id: Long <<PK>>
+  - orderDate: LocalDateTime
+  - totalAmount: BigDecimal
+  - status: OrderStatus
+  - shippingAddress: String
+  - paymentMethod: String
+  - customerId: Long <<FK>>
+  - discountId: Long <<FK>>
+}
+
+ENTITY(OrderItem, "OrderItem") {
+  - id: Long <<PK>>
+  - quantity: Integer
+  - unitPrice: BigDecimal
+  - orderId: Long <<FK>>
+  - productId: Long <<FK>>
+}
+
+ENTITY(Reservation, "Reservation") {
+  - id: Long <<PK>>
+  - reservationDate: LocalDateTime
+  - status: ReservationStatus
+  - pickupDate: LocalDateTime
+  - customerId: Long <<FK>>
+}
+
+ENTITY(ReservationItem, "ReservationItem") {
+  - id: Long <<PK>>
+  - quantity: Integer
+  - reservationId: Long <<FK>>
+  - productId: Long <<FK>>
+}
+
+' Inheritance
+User <|-- Admin
+User <|-- Customer
+
+' Relationships
+Customer "1" --> "1" Cart : has
+Customer "1" --> "0..*" Review : writes
+Customer "1" --> "0..*" Order : places
+Customer "1" --> "0..*" Reservation : makes
+
+Admin "1" --> "0..*" Discount : creates
+Admin "1" --> "0..*" Product : manages
+
+Product "1" --> "0..*" Review : has
+Product "1" --> "0..*" CartItem : included in
+Product "1" --> "0..*" OrderItem : contains
+Product "1" --> "0..*" ReservationItem : reserved in
+
+Discount "0..1" --> "0..*" Order : applies to
+
+Cart "1" --> "1..*" CartItem : contains
+Order "1" --> "1..*" OrderItem : includes
+Reservation "1" --> "1..*" ReservationItem : contains
+@enduml
