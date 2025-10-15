@@ -85,3 +85,5 @@ Admin --> (View Reservation Status)
 (Change Item Quantity) .> (Add to Cart) : <<include>>
 (Remove from Cart) .> (Add to Cart) : <<include>>
 @enduml
+
+.
