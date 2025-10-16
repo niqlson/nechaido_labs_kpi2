@@ -1,0 +1,87 @@
+@startuml
+left to right direction
+
+' ===== АКТОРИ ТА УЗАГАЛЬНЕННЯ =====
+actor User
+actor Guest
+actor Customer  
+actor Admin
+
+User <|-- Guest
+User <|-- Customer
+User <|-- Admin
+
+' ===== СПІЛЬНІ USE CASES ДЛЯ USER =====
+User --> (Login)
+User --> (Logout)
+User --> (Browse Products)
+User --> (Search Products)
+User --> (View Product Details)
+
+' ===== GUEST USE CASES =====
+Guest --> (Register Account)
+
+' ===== CUSTOMER USE CASES =====
+Customer --> (Manage Cart)
+Customer --> (Checkout)
+Customer --> (Enter Shipping Info)
+Customer --> (Select Payment Method)
+Customer --> (Apply Discount Code)
+Customer --> (Confirm Payment)
+Customer --> (Place Order)
+Customer --> (Track Order)
+Customer --> (Manage Reviews)
+Customer --> (Customer Reservations)
+
+' ===== ADMIN USE CASES =====
+Admin --> (Manage Products)
+Admin --> (Manage Discounts)
+Admin --> (View Orders)
+Admin --> (Admin Reservations)
+Admin --> (View Reservation Status)
+
+' ===== АБСТРАКТНІ USE CASES ДЛЯ ГРУПУВАННЯ =====
+(Manage Reviews) <|-- (Write Review)
+(Manage Reviews) <|-- (Edit Review)
+(Manage Reviews) <|-- (Delete Review)
+
+(Manage Products) <|-- (Create Product)
+(Manage Products) <|-- (Update Product)
+(Manage Products) <|-- (Delete Product)
+(Manage Products) <|-- (Update Stock)
+
+(Manage Discounts) <|-- (Create Discount)
+(Manage Discounts) <|-- (Update Discount)
+(Manage Discounts) <|-- (Deactivate Discount)
+
+(Manage Cart) <|-- (Add to Cart)
+(Manage Cart) <|-- (Remove from Cart)
+(Manage Cart) <|-- (Change Item Quantity)
+
+' ===== РОЗДІЛЕНІ ГРУПИ RESERVATIONS =====
+(Customer Reservations) <|-- (Make Reservation)
+(Customer Reservations) <|-- (Cancel Reservation)
+(Customer Reservations) <|-- (View Reservation Status)
+(Customer Reservations) <|-- (Pick Up Reserved Products)
+
+(Admin Reservations) <|-- (Approve Reservation)
+(Admin Reservations) <|-- (Reject Reservation)
+(Admin Reservations) <|-- (View Reservation Status)
+
+' ===== INCLUDE ЗВ'ЯЗКИ =====
+(Checkout) .> (Enter Shipping Info) : <<include>>
+(Checkout) .> (Select Payment Method) : <<include>>
+(Checkout) .> (Apply Discount Code) : <<include>>
+(Checkout) .> (Confirm Payment) : <<include>>
+(Checkout) .> (Place Order) : <<include>>
+
+(Write Review) .> (View Product Details) : <<include>>
+(Edit Review) .> (View Review Details) : <<include>>
+(Delete Review) .> (View Review Details) : <<include>>
+(Pick Up Reserved Products) .> (View Reservation Status) : <<include>>
+(Track Order) .> (View Order Details) : <<include>>
+(Make Reservation) .> (View Product Details) : <<include>>
+(Cancel Reservation) .> (View Reservation Status) : <<include>>
+(Change Item Quantity) .> (Add to Cart) : <<include>>
+(Remove from Cart) .> (Add to Cart) : <<include>>
+@enduml
