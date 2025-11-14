@@ -1,0 +1,185 @@
+@startuml
+hide footbox
+
+title Sequence Diagram: Product Reservation with Admin Approval
+
+actor Customer
+actor Admin
+participant "UI: Reservation\nPage" as UI
+participant "ReservationService" as RS
+participant "ReservationRepository" as RR
+participant "Reservation" as R
+participant "ReservationItem" as RI
+participant "ProductService" as PS
+participant "Product" as P
+participant "NotificationService" as NS
+participant "UI: Admin\nDashboard" as AdminUI
+
+Customer -> UI: browse products and select product for reservation
+activate UI
+UI -> PS: getProductDetails(productId)
+activate PS
+PS -> P: findById(productId)
+activate P
+P --> PS: return Product details
+deactivate P
+PS --> UI: return Product info
+deactivate PS
+deactivate UI
+
+UI -> Customer: display product details and reservation form
+
+Customer -> UI: fill reservation details (quantity, pickup date)
+activate UI
+Customer -> UI: submit reservation request
+
+UI -> RS: createReservation(customerId, productId, quantity, pickupDate)
+activate RS
+
+RS -> PS: checkProductAvailability(productId, quantity)
+activate PS
+PS -> P: getStockQuantity()
+activate P
+P --> PS: return current stock
+deactivate P
+PS --> RS: return availability status
+deactivate PS
+
+alt Product is available
+    RS -> RR: createNewReservation(customerId, pickupDate, "PENDING")
+    activate RR
+    RR -> R: save Reservation entity
+    activate R
+    R --> RR: return saved Reservation
+    deactivate R
+    RR --> RS: return reservation ID
+    deactivate RR
+    
+    RS -> RR: addReservationItem(reservationId, productId, quantity)
+    activate RR
+    RR -> RI: save ReservationItem entity
+    activate RI
+    RI --> RR: return saved ReservationItem
+    deactivate RI
+    RR --> RS: return confirmation
+    deactivate RR
+    
+    RS -> PS: reserveProductStock(productId, quantity)
+    activate PS
+    PS -> P: decreaseAvailableStock(quantity)
+    activate P
+    P --> PS: stock updated
+    deactivate P
+    PS --> RS: stock reserved
+    deactivate PS
+    
+    RS -> NS: notifyAdminNewReservation(reservationId)
+    activate NS
+    NS --> RS: notification sent
+    deactivate NS
+    
+    RS --> UI: return reservation submitted\nwith pending status
+    deactivate RS
+    UI -> Customer: display reservation submitted message\n"Waiting for admin approval"
+    deactivate UI
+    destroy UI
+    
+else Product not available
+    RS --> UI: return error "Product not available in requested quantity"
+    deactivate RS
+    UI -> Customer: display error message
+    deactivate UI
+    destroy UI
+end
+
+' === ADMIN APPROVAL PROCESS ===
+
+Admin -> AdminUI: view pending reservations
+activate AdminUI
+AdminUI -> RS: getPendingReservations()
+activate RS
+RS -> RR: findReservationsByStatus("PENDING")
+activate RR
+RR --> RS: return list of pending reservations
+deactivate RR
+RS --> AdminUI: return reservations data
+deactivate RS
+AdminUI -> Admin: display pending reservations list
+deactivate AdminUI
+
+Admin -> AdminUI: select reservation for review
+activate AdminUI
+AdminUI -> RS: getReservationDetails(reservationId)
+activate RS
+RS -> RR: findReservationById(reservationId)
+activate RR
+RR --> RS: return Reservation with items
+deactivate RR
+RS --> AdminUI: return full reservation details
+deactivate RS
+AdminUI -> Admin: display reservation details
+deactivate AdminUI
+
+alt Admin approves reservation
+    Admin -> AdminUI: approve reservation
+    activate AdminUI
+    AdminUI -> RS: approveReservation(reservationId)
+    activate RS
+    RS -> RR: updateReservationStatus(reservationId, "APPROVED")
+    activate RR
+    RR -> R: setStatus("APPROVED")
+    activate R
+    R --> RR: reservation updated
+    deactivate R
+    RR --> RS: update confirmed
+    deactivate RR
+    
+    RS -> NS: sendReservationApproval(customerId, reservationId)
+    activate NS
+    NS --> RS: notification sent
+    deactivate NS
+    
+    RS --> AdminUI: return approval success
+    deactivate RS
+    AdminUI -> Admin: display approval confirmation
+    deactivate AdminUI
+    destroy AdminUI
+    
+else Admin rejects reservation
+    Admin -> AdminUI: reject reservation
+    activate AdminUI
+    AdminUI -> RS: rejectReservation(reservationId)
+    activate RS
+    RS -> RR: updateReservationStatus(reservationId, "REJECTED")
+    activate RR
+    RR -> R: setStatus("REJECTED")
+    activate R
+    R --> RR: reservation updated
+    deactivate R
+    RR --> RS: update confirmed
+    deactivate RR
+    
+    RS -> PS: restoreProductStock(reservationId)
+    activate PS
+    PS -> P: increaseAvailableStock(quantity)
+    activate P
+    P --> PS: stock restored
+    deactivate P
+    PS --> RS: stock updated
+    deactivate PS
+    
+    RS -> NS: sendReservationRejection(customerId, reservationId)
+    activate NS
+    NS --> RS: notification sent
+    deactivate NS
+    
+    RS --> AdminUI: return rejection success
+    deactivate RS
+    AdminUI -> Admin: display rejection confirmation
+    deactivate AdminUI
+    destroy AdminUI
+end
+
+destroy Customer
+destroy Admin
+@enduml
