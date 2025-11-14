@@ -1,0 +1,105 @@
+@startuml
+hide footbox
+
+title Sequence Diagram: Pick Up Reserved Products
+
+actor Customer
+actor Admin
+participant "UI: Customer\nReservations" as CustUI
+participant "UI: Admin\nPickup" as AdminUI
+participant "ReservationService" as RS
+participant "ReservationRepository" as RR
+participant "Reservation" as R
+participant "ReservationItem" as RI
+participant "ProductService" as PS
+participant "Product" as P
+participant "InventoryService" as IS
+
+Customer -> CustUI: view my reservations
+activate CustUI
+CustUI -> RS: getCustomerReservations(customerId)
+activate RS
+RS -> RR: findReservationsByCustomerId(customerId)
+activate RR
+RR --> RS: return customer's reservations
+deactivate RR
+RS --> CustUI: return reservations with status
+deactivate RS
+CustUI -> Customer: display reservations list\n(highlight APPROVED reservations)
+deactivate CustUI
+
+Customer -> CustUI: select approved reservation for pickup
+activate CustUI
+CustUI -> RS: getReservationDetails(reservationId)
+activate RS
+RS -> RR: findReservationById(reservationId)
+activate RR
+RR --> RS: return Reservation with items
+deactivate RR
+RS --> CustUI: return reservation details
+deactivate RS
+CustUI -> Customer: display reservation details\nwith pickup instructions
+deactivate CustUI
+destroy CustUI
+
+Customer -> Admin: arrive at store for pickup\nprovide reservation ID
+
+Admin -> AdminUI: access pickup interface
+activate AdminUI
+AdminUI -> RS: getReservationForPickup(reservationId)
+activate RS
+RS -> RR: findReservationById(reservationId)
+activate RR
+RR --> RS: return Reservation
+deactivate RR
+RS --> AdminUI: return reservation details
+deactivate RS
+AdminUI -> Admin: display reservation details
+deactivate AdminUI
+
+Admin -> AdminUI: verify customer identity\nand confirm pickup
+activate AdminUI
+AdminUI -> RS: processReservationPickup(reservationId, adminId)
+activate RS
+
+RS -> RR: updateReservationStatus(reservationId, "COMPLETED")
+activate RR
+RR -> R: setStatus("COMPLETED")
+activate R
+R --> RR: reservation updated
+deactivate R
+RR --> RS: update confirmed
+deactivate RR
+
+RS -> RI: getReservationItems(reservationId)
+activate RI
+RI --> RS: return reservation items
+deactivate RI
+
+loop for each reservation item
+    RS -> PS: processReservedProductPickup(productId, quantity)
+    activate PS
+    PS -> P: decreaseStock(quantity)
+    activate P
+    P --> PS: stock permanently decreased
+    deactivate P
+    PS --> RS: product updated
+    deactivate PS
+end
+
+RS -> IS: updateInventoryRecords(reservationId)
+activate IS
+IS --> RS: inventory updated
+deactivate IS
+
+RS --> AdminUI: return pickup processed successfully
+deactivate RS
+AdminUI -> Admin: display pickup confirmation
+deactivate AdminUI
+destroy AdminUI
+
+Admin -> Customer: hand over reserved products
+
+destroy Customer
+destroy Admin
+@enduml
