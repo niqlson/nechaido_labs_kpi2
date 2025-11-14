@@ -26,10 +26,8 @@ deactivate RR
 RS --> CustUI: return reservations with status
 deactivate RS
 CustUI -> Customer: display reservations list\n(highlight APPROVED reservations)
-deactivate CustUI
 
 Customer -> CustUI: select approved reservation for pickup
-activate CustUI
 CustUI -> RS: getReservationDetails(reservationId)
 activate RS
 RS -> RR: findReservationById(reservationId)
@@ -42,7 +40,7 @@ CustUI -> Customer: display reservation details\nwith pickup instructions
 deactivate CustUI
 destroy CustUI
 
-Customer -> Admin: arrive at store for pickup\nprovide reservation ID
+Customer -> Admin: arrive at store\nprovide reservation ID
 
 Admin -> AdminUI: access pickup interface
 activate AdminUI
@@ -55,10 +53,8 @@ deactivate RR
 RS --> AdminUI: return reservation details
 deactivate RS
 AdminUI -> Admin: display reservation details
-deactivate AdminUI
 
 Admin -> AdminUI: verify customer identity\nand confirm pickup
-activate AdminUI
 AdminUI -> RS: processReservationPickup(reservationId, adminId)
 activate RS
 
@@ -78,13 +74,9 @@ deactivate RI
 
 loop for each reservation item
     RS -> PS: processReservedProductPickup(productId, quantity)
-    activate PS
     PS -> P: decreaseStock(quantity)
-    activate P
     P --> PS: stock permanently decreased
-    deactivate P
     PS --> RS: product updated
-    deactivate PS
 end
 
 RS -> IS: updateInventoryRecords(reservationId)
@@ -99,7 +91,4 @@ deactivate AdminUI
 destroy AdminUI
 
 Admin -> Customer: hand over reserved products
-
-destroy Customer
-destroy Admin
 @enduml

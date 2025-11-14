@@ -18,8 +18,8 @@ participant "Product" as P
 participant "PaymentService" as Payment
 participant "EmailService" as ES
 
-Customer -> UI: proceed to checkout from cart
 activate UI
+Customer -> UI: proceed to checkout from cart
 UI -> CS: getCartWithItems(customerId)
 activate CS
 CS -> C: findCartByCustomerId(customerId)
@@ -33,13 +33,10 @@ deactivate CI
 CS --> UI: return cart with items and total
 deactivate CS
 UI -> Customer: display order summary and checkout form
-deactivate UI
 
-Customer -> UI: enter shipping address\nselect payment method\napply discount code (optional)
-activate UI
+Customer -> UI: enter shipping address, select payment method, optional discount code
 
 alt Discount code applied
-    Customer -> UI: enter discount code
     UI -> DS: validateDiscount(code, customerId)
     activate DS
     DS -> D: findActiveDiscountByCode(code)
@@ -55,8 +52,7 @@ alt Discount code applied
 end
 
 Customer -> UI: confirm order and payment
-
-UI -> OS: createOrder(customerId, shippingAddress, \npaymentMethod, discountCode)
+UI -> OS: createOrder(customerId, shippingAddress, paymentMethod, discountCode)
 activate OS
 
 OS -> CS: getCartForOrder(customerId)
@@ -88,7 +84,6 @@ alt all items available
         activate OI
         OI --> OS: return saved OrderItem
         deactivate OI
-        destroy OI
         
         OS -> PS: updateProductStock(productId, -quantity)
         activate PS
@@ -99,7 +94,7 @@ alt all items available
         PS --> OS: stock decreased
         deactivate PS
     end
-    
+
     alt discount applied
         OS -> DS: applyDiscount(orderId, discountCode)
         activate DS
@@ -107,11 +102,10 @@ alt all items available
         activate D
         D --> DS: discount updated
         deactivate D
-        destroy D
         DS --> OS: discount applied
         deactivate DS
     end
-    
+
     OS -> Payment: processPayment(orderId, amount, paymentMethod)
     activate Payment
     Payment --> OS: return payment status
@@ -122,7 +116,6 @@ alt all items available
         activate O
         O --> OS: order updated
         deactivate O
-        destroy O
         
         OS -> CS: clearCart(customerId)
         activate CS
@@ -130,40 +123,34 @@ alt all items available
         activate CI
         CI --> CS: items deleted
         deactivate CI
-        destroy CI
         CS --> OS: cart cleared
         deactivate CS
-        destroy C
         
         OS -> ES: sendOrderConfirmation(customerId, orderId)
         activate ES
         ES --> OS: email sent
         deactivate ES
         
-        OS --> UI: return order creation success\nwith order ID and confirmation
+        OS --> UI: return order creation success with order ID and confirmation
         deactivate OS
-        UI -> Customer: display order confirmation\nwith tracking information
-        deactivate UI
+        UI -> Customer: display order confirmation with tracking information
         
     else payment failed
         OS -> O: updateOrderStatus("PAYMENT_FAILED")
         activate O
         O --> OS: order updated
         deactivate O
-        destroy O
         OS --> UI: return payment error
         deactivate OS
         UI -> Customer: display payment failure message
-        deactivate UI
     end
     
 else some items unavailable
     OS --> UI: return error "Some items are no longer available"
     deactivate OS
-    UI -> Customer: display availability error\nwith list of unavailable items
+    UI -> Customer: display availability error with list of unavailable items
     deactivate UI
-    destroy UI
 end
 
-destroy Customer
+destroy UI
 @enduml
