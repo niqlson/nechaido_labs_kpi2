@@ -1,0 +1,136 @@
+@startuml
+|Customer|
+start
+:Open cart and proceed to checkout;
+:Enter shipping info;
+:Select payment method;
+
+if (Discount code entered?) then (yes)
+    :Enter discount code;
+    --> [DiscountRequest]
+endif
+
+--> UI
+
+|UI|
+:Fetch cart with items;
+--> CartService
+
+|CartService|
+:Find cart by customerId;
+:Get cart items;
+--> [Cart]
+--> UI
+
+|UI|
+:Display order summary;
+
+if (Discount code entered?) then (yes)
+    --> DiscountService
+endif
+
+|DiscountService|
+if (Discount code entered?) then (yes)
+    :Validate discount;
+    :Check status and limits;
+    --> [DiscountInfo]
+endif
+
+|UI|
+if (Discount code entered?) then (yes)
+    :Apply discount to preview;
+endif
+
+--> Customer
+
+|Customer|
+:Confirm order;
+--> [OrderRequest]
+--> OrderService
+
+|OrderService|
+:Request cart for order;
+--> CartService
+
+|CartService|
+:Find cart by customerId;
+:Get items for order;
+--> [CartItems]
+--> OrderService
+
+|OrderService|
+:Check stock for each item;
+--> [StockCheckRequest]
+--> ProductService
+
+|ProductService|
+:Evaluate stock quantities;
+--> [StockStatus]
+--> OrderService
+
+|OrderService|
+if (All items available?) then (yes)
+    :Calculate total;
+    :Create Order entity;
+    --> [Order]
+    :Create OrderItems;
+    --> [OrderItems]
+    --> PaymentService
+else (no)
+    :Prepare list of unavailable items;
+    --> [ErrorMessage]
+    --> UI
+    |UI|
+    :Show unavailable items error;
+    --> Customer
+    |Customer|
+    stop
+endif
+
+|PaymentService|
+:Process payment;
+--> [PaymentResult]
+:Send «signal» PaymentCompleted;
+
+|OrderService|
+:Accept «signal» PaymentCompleted;
+
+if (Payment successful?) then (yes)
+    :Update status → CONFIRMED;
+    --> [ConfirmationMessage]
+
+    --> CartService
+    |CartService|
+    :Clear cart;
+    --> [CartCleared]
+
+    --> EmailService
+    |EmailService|
+    :Send confirmation email;
+    --> [EmailSent]
+    :Send «signal» ConfirmationEmailSent;
+
+    |Customer|
+    :Accept «signal» ConfirmationEmailSent;
+
+    |OrderService|
+    :Finalize order;
+    --> UI
+
+    |UI|
+    :Show success message;
+    --> Customer
+    |Customer|
+    stop
+
+else (no)
+    :Update status → PAYMENT_FAILED;
+    --> [ErrorMessage]
+    --> UI
+    |UI|
+    :Show payment error;
+    --> Customer
+    |Customer|
+    stop
+endif
+@enduml
